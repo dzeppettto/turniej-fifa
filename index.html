@@ -3,204 +3,366 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#080c1a">
+<meta name="description" content="GRZYBOWIT FIFA CUP — turnieje FIFA/EA SPORTS FC: mecze, tabele, drabinki i statystyki.">
 <title>GRZYBOWIT FIFA CUP</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="styles.css">
 </head>
 <body>
 <div class="bg"></div>
 
-<!-- STRONA STARTOWA -->
-<div id="intro" class="intro">
-  <div class="intro-box">
-    <div class="intro-logo">🏆</div>
-    <h1 class="intro-title">GRZYBOWIT <span>FIFA CUP</span></h1>
-    <p class="intro-sub">Mecze · tabele · drabinki · statystyki graczy</p>
-    <div class="intro-actions">
-      <button id="introNew" class="btn btn-gold">▶️ Zacznij nowy turniej</button>
-      <button id="introStats" class="btn">📊 Statystyki i historia</button>
-      <button id="introSync" class="btn">🌐 Współdzielone wyniki</button>
-      <button id="introContinue" class="btn btn-ghost">↩️ Wróć do bieżącego turnieju</button>
-    </div>
-  </div>
-</div>
+<div class="layout">
 
-<header class="topbar">
-  <div class="brand">
-    <div class="logo">🏆</div>
-    <div>
-      <h1><span id="brandGame">FIFA 15</span> <span class="date" id="brandDate">13.10.2026</span></h1>
-      <p class="sub" id="tourSub">—</p>
-    </div>
-  </div>
-  <div class="top-actions">
-    <button id="syncChip" class="sync-chip" type="button" title="Współdzielone wyniki online">
-      <span class="sync-dot off"></span><span id="syncChipText">Lokalnie</span>
+  <!-- ================= SIDEBAR / NAV ================= -->
+  <aside class="sidebar">
+    <button class="side-brand" id="brandHome" type="button">
+      <span class="logo" data-ico="trophy"></span>
+      <span class="side-brand-text">
+        <b>GRZYBOWIT</b>
+        <small>FIFA CUP</small>
+      </span>
     </button>
-    <select id="tourSelect" class="select" title="Wybierz turniej"></select>
-    <button id="btnNewTour" class="btn">➕ Nowy turniej</button>
-    <button id="btnDraw" class="btn btn-gold">🎲 Losuj rewanże</button>
-  </div>
-</header>
 
-<nav class="tabs">
-  <button class="tab active" data-tab="kolejki">📅 Kolejki</button>
-  <button class="tab" data-tab="tabela">📊 Tabela</button>
-  <button class="tab" data-tab="drabinka">🏆 Drabinka</button>
-</nav>
+    <nav class="nav" id="mainNav" aria-label="Nawigacja główna">
+      <button class="nav-item active" data-view="home" type="button"><span class="ico" data-ico="home"></span><span class="lbl">Start</span></button>
+      <button class="nav-item" data-view="matches" type="button"><span class="ico" data-ico="calendar"></span><span class="lbl">Mecze</span></button>
+      <button class="nav-item" data-view="standings" type="button"><span class="ico" data-ico="table"></span><span class="lbl">Tabela</span></button>
+      <button class="nav-item" data-view="bracket" type="button"><span class="ico" data-ico="bracket"></span><span class="lbl">Drabinka</span></button>
+      <button class="nav-item" data-view="players" type="button"><span class="ico" data-ico="users"></span><span class="lbl">Gracze</span></button>
+      <button class="nav-item" data-view="tournaments" type="button"><span class="ico" data-ico="history"></span><span class="lbl">Turnieje</span></button>
+      <button class="nav-item" data-view="data" type="button"><span class="ico" data-ico="settings"></span><span class="lbl">Dane</span></button>
+    </nav>
 
-<main>
-  <!-- KOLEJKI -->
-  <section id="kolejki" class="panel active">
-    <div class="col2">
-      <div class="card">
-        <h2>Kolejka 1 <span class="badge">faza zasadnicza</span></h2>
-        <div id="round1Header" class="round2-header"></div>
-        <div id="round1List" class="matches"></div>
-      </div>
-      <div class="card">
-        <h2>Kolejka 2 <span class="badge badge-red">rewanże</span></h2>
-        <div id="round2Header" class="round2-header"></div>
-        <div id="round2List" class="matches"></div>
-      </div>
+    <div class="side-foot">
+      <button id="btnNewTour" class="btn btn-gold btn-block" type="button"><span data-ico="plus"></span> Nowy turniej</button>
     </div>
-  </section>
+  </aside>
 
-  <!-- TABELA -->
-  <section id="tabela" class="panel">
-    <div class="card">
-      <h2>📊 Tabela turnieju <span class="badge" id="tblName"></span></h2>
-      <div class="table-wrap">
-        <table class="standings">
-          <thead>
-            <tr>
-              <th>#</th><th>Zawodnik</th><th>M</th><th>Z</th><th>R</th><th>P</th>
-              <th>Bramki</th><th>Bilans</th><th>Pkt</th>
-            </tr>
-          </thead>
-          <tbody id="standingsBody"></tbody>
-        </table>
+  <!-- ================= CONTENT ================= -->
+  <div class="content">
+
+    <header class="topbar">
+      <div class="tb-left">
+        <div class="tb-title">
+          <h1 id="brandGame">FIFA 15</h1>
+          <span class="date" id="brandDate">13.10.2026</span>
+          <span class="badge" id="tourStatus">w trakcie</span>
+        </div>
+        <p class="sub" id="tourSub">—</p>
       </div>
-      <p class="note">Zwycięstwo 3 pkt · Remis 1 pkt · Porażka 0 pkt · Kryteria: pkt → bilans → bezpośrednie mecze (H2H) → bramki zdobyte.</p>
-    </div>
-  </section>
-
-  <!-- DRABINKA -->
-  <section id="drabinka" class="panel">
-    <div class="card">
-      <h2>🏆 Faza pucharowa <span class="badge" id="brName"></span></h2>
-      <div class="bracket">
-        <div class="bracket-col">
-          <h3>Kolejka 1</h3>
-          <div id="bracketR1" class="bracket-matches"></div>
-        </div>
-        <div class="bracket-col">
-          <h3>Rewanże</h3>
-          <div id="bracketR2" class="bracket-matches"></div>
-        </div>
-        <div class="bracket-col">
-          <h3>🏆 FINAŁ (1 vs 2)</h3>
-          <div id="bracketFinal" class="bracket-matches"></div>
-          <h3 style="margin-top:14px">🥉 Mecz o 3. miejsce</h3>
-          <div id="bracketThird" class="bracket-matches"></div>
-        </div>
+      <div class="tb-actions">
+        <select id="tourSelect" class="select" title="Wybierz turniej" aria-label="Wybierz turniej"></select>
+        <button id="syncChip" class="sync-chip" type="button" title="Współdzielone wyniki online">
+          <span class="sync-dot off"></span><span id="syncChipText">Lokalnie</span>
+        </button>
       </div>
-    </div>
-  </section>
+    </header>
 
-  <!-- GRACZE i TURNIEJE przeniesione do osobnego ekranu (#historyScreen) -->
-</main>
+    <main class="views">
 
-<!-- EKRAN STATYSTYK I HISTORII (dostępny tylko ze strony startowej) -->
-<div id="historyScreen" class="history hidden">
-  <div class="history-bar">
-    <h2>📊 Statystyki i historia</h2>
-    <button id="btnHistoryBack" class="btn btn-ghost">↩️ Wróć do ekranu startowego</button>
-  </div>
-  <div class="history-body">
-
-    <section id="gracze" class="hist-section">
-      <div class="card">
-        <h2>👤 Ranking graczy <span class="badge" id="pgBadge"></span></h2>
-        <div class="filter-row">
-          <label>Gra:
-            <select id="pgFilter" class="select"></select>
-          </label>
-          <span class="note" id="pgCount"></span>
+      <!-- ===== START ===== -->
+      <section id="view-home" class="view active">
+        <div id="homeEmpty" class="empty-state card hidden">
+          <span class="empty-ico" data-ico="trophy"></span>
+          <h2>Nie masz jeszcze żadnego turnieju</h2>
+          <p class="note">Utwórz pierwszy turniej, dodaj graczy i wpisuj wyniki — tabela, drabinka i statystyki policzą się same.</p>
+          <button class="btn btn-gold" id="homeCreate" type="button"><span data-ico="plus"></span> Utwórz pierwszy turniej</button>
         </div>
-        <div class="table-wrap">
-          <table class="standings">
-            <thead>
-              <tr>
-                <th>#</th><th>Zawodnik</th><th>Turnieje</th><th>Tytuły</th><th>M</th>
-                <th>Z</th><th>R</th><th>P</th><th>Bramki</th><th>Bilans</th><th>Pkt</th>
-                <th>%Z</th><th>Śr.br.</th>
-              </tr>
-            </thead>
-            <tbody id="playersBody"></tbody>
-          </table>
-        </div>
-        <p class="note">Kliknij zawodnika, aby zobaczyć kartę profilu. Bilans liczony ze wszystkich meczów (liga + faza pucharowa).</p>
-      </div>
 
-      <div class="card" style="margin-top:18px">
-        <h2>🎮 Bilans per gra (Z-R-P)</h2>
-        <div class="table-wrap">
-          <table class="standings">
-            <thead id="perGameHead"></thead>
-            <tbody id="perGameBody"></tbody>
-          </table>
-        </div>
-      </div>
+        <div id="homeContent">
+          <div class="card hero">
+            <div class="hero-text">
+              <h2 class="hero-title">Witaj w swojej strefie rozgrywek</h2>
+              <p class="hero-sub">Wszystkie turnieje, wyniki i statystyki znajomych w jednym miejscu.</p>
+              <div class="hero-badges">
+                <span class="badge badge-gold" id="heroGame">FIFA 15</span>
+                <span class="badge" id="heroTourName">—</span>
+                <span class="badge" id="heroTourStatus">w trakcie</span>
+              </div>
+            </div>
+            <div class="hero-actions">
+              <button class="btn btn-gold" id="homeContinue" type="button"><span data-ico="play"></span> Kontynuuj turniej</button>
+              <button class="btn btn-ghost" id="homeNew" type="button"><span data-ico="plus"></span> Rozpocznij nowy</button>
+            </div>
+          </div>
 
-      <div class="card" style="margin-top:18px">
-        <h2>⚔️ Bezpośrednie mecze (H2H)</h2>
-        <div class="filter-row">
-          <select id="h2hA" class="select"></select>
-          <span class="h2h-vs">vs</span>
-          <select id="h2hB" class="select"></select>
-        </div>
-        <div id="h2hResult" class="h2h-result"></div>
-      </div>
+          <div class="stat-cards">
+            <div class="stat-card"><span class="stat-ico" data-ico="trophy"></span><b id="statTours">0</b><span class="stat-lbl">Turnieje</span></div>
+            <div class="stat-card"><span class="stat-ico" data-ico="calendar"></span><b id="statMatches">0</b><span class="stat-lbl">Rozegrane mecze</span></div>
+            <div class="stat-card"><span class="stat-ico" data-ico="users"></span><b id="statPlayers">0</b><span class="stat-lbl">Aktywni zawodnicy</span></div>
+            <div class="stat-card"><span class="stat-ico" data-ico="star"></span><b id="statTitles">0</b><span class="stat-lbl">Zdobyte tytuły</span></div>
+          </div>
 
-      <div class="card" style="margin-top:18px">
-        <h2>👥 Gracze stali <span class="badge" id="rosterBadge"></span></h2>
-        <div class="roster" id="rosterList"></div>
-        <div class="filter-row" style="margin-top:12px">
-          <input id="rosterInput" class="select" placeholder="Imię nowego gracza" style="min-width:200px">
-          <button id="btnRosterAdd" class="btn btn-gold">➕ Dodaj stałego gracza</button>
-          <span class="note" id="rosterMsg"></span>
-        </div>
-        <p class="note">Stali gracze są zawsze widoczni w profilach i statystykach — nawet bez rozegranych meczów.</p>
-      </div>
-    </section>
+          <div class="home-grid">
+            <div class="card active-tour">
+              <div class="card-head">
+                <h2><span data-ico="trophy"></span> Bieżący turniej</h2>
+                <span class="badge" id="homeStatus">w trakcie</span>
+              </div>
+              <h3 class="active-name" id="homeName">—</h3>
+              <p class="active-meta" id="homeMeta">—</p>
+              <div class="tiles">
+                <div class="tile"><span class="tile-lbl">Gracze</span><b id="homePlayers">0</b></div>
+                <div class="tile"><span class="tile-lbl">Mecze</span><b id="homePlayed">0 / 0</b></div>
+                <div class="tile"><span class="tile-lbl">Prowadzi</span><b id="homeLeader">—</b></div>
+                <div class="tile"><span class="tile-lbl">Mistrz</span><b id="homeChamp">—</b></div>
+              </div>
+              <div class="next-match" id="homeNext"></div>
+              <div class="home-actions">
+                <button class="btn btn-gold" id="homeGoMatches" type="button"><span data-ico="calendar"></span> Wpisz wyniki</button>
+                <button class="btn btn-ghost" id="homeGoTable" type="button"><span data-ico="table"></span> Tabela</button>
+              </div>
+            </div>
 
-    <section id="turnieje" class="hist-section">
-      <div class="card">
-        <h2>🗂️ Wszystkie turnieje</h2>
-        <div class="filter-row">
-          <button id="btnRecover" class="btn btn-ghost">♻️ Odzyskaj wyniki z poprzedniej wersji</button>
+            <div class="card">
+              <div class="card-head"><h2><span data-ico="trophy"></span> Hall of Fame</h2><span class="badge badge-gold" id="hofBadge">—</span></div>
+              <div id="hofBody"></div>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card-head">
+              <h2><span data-ico="activity"></span> Ostatnie wyniki</h2>
+              <span class="badge" id="homeRecentBadge"></span>
+            </div>
+            <div class="recent" id="homeRecent"></div>
+          </div>
+
+          <div class="card">
+            <div class="card-head"><h2><span data-ico="users"></span> Czołówka wszech czasów</h2></div>
+            <div class="table-wrap">
+              <table class="standings compact">
+                <thead><tr><th>#</th><th>Zawodnik</th><th>Tytuły</th><th>M</th><th>Z</th><th>R</th><th>P</th><th>Bilans</th><th>Pkt</th><th>%Z</th></tr></thead>
+                <tbody id="homeTop"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ===== MECZE ===== -->
+      <section id="view-matches" class="view">
+        <div id="matchesArea" class="matches-area"></div>
+      </section>
+
+      <!-- ===== TABELA ===== -->
+      <section id="view-standings" class="view">
+        <div class="card">
+          <div class="card-head">
+            <h2><span data-ico="table"></span> Tabela turnieju <span class="badge" id="tblName"></span></h2>
+            <div class="filter-row tight">
+              <label>Kryteria remisów:
+                <select id="tbTiebreak" class="select">
+                  <option value="h2h">Punkty → bilans → H2H → bramki</option>
+                  <option value="gd">Punkty → bilans → bramki</option>
+                  <option value="played">Punkty → bramki zdobyte</option>
+                  <option value="h2h-fifa">FIFA (punkty → bilans → bramki)</option>
+                </select>
+              </label>
+              <button id="tbExport" class="btn btn-ghost btn-sm" type="button"><span data-ico="download"></span> CSV</button>
+            </div>
+          </div>
+          <div class="table-wrap">
+            <table class="standings" id="standingsTable">
+              <thead>
+                <tr>
+                  <th data-sort="pos">#</th>
+                  <th data-sort="name">Zawodnik</th>
+                  <th data-sort="m">M</th><th data-sort="w">Z</th><th data-sort="d">R</th><th data-sort="l">P</th>
+                  <th data-sort="gf">GZ</th><th data-sort="ga">GS</th><th data-sort="gd">Bilans</th>
+                  <th data-sort="pts">Pkt</th><th data-sort="winPct">%Z</th>
+                </tr>
+              </thead>
+              <tbody id="standingsBody"></tbody>
+            </table>
+          </div>
+          <p class="note" id="tblNote">Zwycięstwo 3 pkt · Remis 1 pkt · Porażka 0 pkt. Kliknij nagłówek kolumny, aby posortować.</p>
+        </div>
+      </section>
+
+      <!-- ===== DRABINKA ===== -->
+      <section id="view-bracket" class="view">
+        <div class="card">
+          <div class="card-head"><h2><span data-ico="bracket"></span> Faza pucharowa <span class="badge" id="brName"></span></h2></div>
+          <div id="bracketArea"></div>
+        </div>
+      </section>
+
+      <!-- ===== GRACZE ===== -->
+      <section id="view-players" class="view">
+        <div class="card">
+          <div class="card-head">
+            <h2><span data-ico="users"></span> Ranking graczy <span class="badge" id="pgBadge"></span></h2>
+            <div class="seg" id="pgViewToggle">
+              <button data-pgview="table" class="active" type="button">Tabela</button>
+              <button data-pgview="cards" type="button">Karty</button>
+            </div>
+          </div>
+          <div class="filter-row">
+            <label>Gra: <select id="pgFilter" class="select"></select></label>
+            <label>Turniej: <select id="pgTour" class="select"></select></label>
+            <label>Faza: <select id="pgStage" class="select">
+              <option value="">Wszystkie</option>
+              <option value="liga">Liga</option>
+              <option value="puchar">Faza pucharowa</option>
+            </select></label>
+            <label>Od: <input id="pgFrom" class="select" type="date"></label>
+            <label>Do: <input id="pgTo" class="select" type="date"></label>
+            <button id="pgReset" class="btn btn-ghost btn-sm" type="button">Wyczyść filtry</button>
+            <span class="note" id="pgCount"></span>
+          </div>
+          <div class="table-wrap" id="playersTableWrap">
+            <table class="standings" id="playersTable">
+              <thead>
+                <tr>
+                  <th data-psort="pos">#</th><th data-psort="name">Zawodnik</th>
+                  <th data-psort="tours">Turnieje</th><th data-psort="titles">Tytuły</th>
+                  <th data-psort="m">M</th><th data-psort="w">Z</th><th data-psort="d">R</th><th data-psort="l">P</th>
+                  <th data-psort="gf">GZ</th><th data-psort="ga">GS</th><th data-psort="gd">Bilans</th>
+                  <th data-psort="pts">Pkt</th><th data-psort="winPct">%Z</th><th data-psort="avgGf">Śr.GZ</th><th data-psort="avgGa">Śr.GS</th>
+                </tr>
+              </thead>
+              <tbody id="playersBody"></tbody>
+            </table>
+          </div>
+          <div class="player-cards hidden" id="playerCards"></div>
+          <p class="note">Kliknij zawodnika, aby zobaczyć kartę profilu. Bilans liczony ze wszystkich meczów (liga + faza pucharowa).</p>
+          <div id="statsMismatch" class="alert hidden"></div>
+        </div>
+
+        <div class="card">
+          <div class="card-head"><h2><span data-ico="chart"></span> Wykresy</h2><span class="badge" id="chartsBadge"></span></div>
+          <div class="charts">
+            <div class="chart-box"><h3>Zwycięstwa</h3><div id="chartWins" class="chart"></div></div>
+            <div class="chart-box"><h3>Gole zdobyte / stracone</h3><div id="chartGoals" class="chart"></div></div>
+            <div class="chart-box"><h3>Tytuły</h3><div id="chartTitles" class="chart"></div></div>
+            <div class="chart-box"><h3>Punkty</h3><div id="chartPts" class="chart"></div></div>
+          </div>
+          <p class="note">Wykresy reagują na aktywne filtry powyżej. Pokaż / ukryj dane po najechaniu na słupek.</p>
+        </div>
+
+        <div class="card">
+          <div class="card-head"><h2><span data-ico="grid"></span> Bilans per gra (Z-R-P)</h2></div>
+          <div class="table-wrap">
+            <table class="standings compact">
+              <thead id="perGameHead"></thead>
+              <tbody id="perGameBody"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-head">
+            <h2><span data-ico="swords"></span> Bezpośrednie mecze (H2H)</h2>
+          </div>
+          <div class="filter-row">
+            <select id="h2hA" class="select" aria-label="Gracz A"></select>
+            <span class="h2h-vs">vs</span>
+            <select id="h2hB" class="select" aria-label="Gracz B"></select>
+            <button id="h2hSwap" class="btn btn-ghost btn-sm" type="button"><span data-ico="swap"></span> Zamień</button>
+          </div>
+          <div id="h2hResult" class="h2h-result"></div>
+        </div>
+
+        <div class="card">
+          <div class="card-head"><h2><span data-ico="user"></span> Gracze stali <span class="badge" id="rosterBadge"></span></h2></div>
+          <div class="roster" id="rosterList"></div>
+          <div class="filter-row" style="margin-top:12px">
+            <input id="rosterInput" class="select" placeholder="Imię nowego gracza" style="min-width:180px">
+            <button id="btnRosterAdd" class="btn btn-gold" type="button"><span data-ico="plus"></span> Dodaj stałego gracza</button>
+            <input id="rosterSearch" class="select" placeholder="Szukaj gracza…" style="min-width:160px">
+            <span class="note" id="rosterMsg"></span>
+          </div>
+          <p class="note">Stali gracze są zawsze widoczni w profilach i statystykach — nawet bez rozegranych meczów. Usunięcie gracza nie kasuje historii jego meczów.</p>
+        </div>
+      </section>
+
+      <!-- ===== TURNIEJE ===== -->
+      <section id="view-tournaments" class="view">
+        <div class="card">
+          <div class="card-head">
+            <h2><span data-ico="history"></span> Wszystkie turnieje</h2>
+            <button id="btnRecover" class="btn btn-ghost btn-sm" type="button"><span data-ico="refresh"></span> Odzyskaj starsze wyniki</button>
+          </div>
           <span class="note" id="recoverMsg"></span>
+          <div class="filter-row">
+            <input id="tourSearch" class="select" placeholder="Szukaj turnieju…" style="min-width:200px">
+            <label>Gra: <select id="tourFilterGame" class="select"></select></label>
+            <label>Status: <select id="tourFilterStatus" class="select">
+              <option value="">Wszystkie</option>
+              <option value="active">W trakcie</option>
+              <option value="done">Zakończone</option>
+            </select></label>
+            <label>Sortuj: <select id="tourSort" class="select">
+              <option value="date-desc">Data (najnowsze)</option>
+              <option value="date-asc">Data (najstarsze)</option>
+              <option value="players-desc">Liczba graczy</option>
+              <option value="name-asc">Nazwa</option>
+            </select></label>
+            <button id="tourExportCsv" class="btn btn-ghost btn-sm" type="button"><span data-ico="download"></span> CSV</button>
+          </div>
+          <div class="table-wrap">
+            <table class="standings">
+              <thead>
+                <tr><th>Turniej</th><th>Gra</th><th>Data</th><th>Gracze</th><th>Mistrz</th><th>2. miejsce</th><th>3. miejsce</th><th>Status</th><th></th></tr>
+              </thead>
+              <tbody id="tourRows"></tbody>
+            </table>
+          </div>
         </div>
-        <div class="table-wrap">
-          <table class="standings">
-            <thead>
-              <tr><th>Turniej</th><th>Gra</th><th>Data</th><th>Gracze</th><th>Mistrz</th><th>2. miejsce</th><th>3. miejsce</th><th>Status</th><th></th></tr>
-            </thead>
-            <tbody id="tourRows"></tbody>
-          </table>
-        </div>
-      </div>
-    </section>
+      </section>
 
+      <!-- ===== DANE ===== -->
+      <section id="view-data" class="view">
+        <div class="home-grid">
+          <div class="card">
+            <div class="card-head"><h2><span data-ico="cloud"></span> Współdzielone wyniki</h2></div>
+            <div id="dataSyncBox" class="sync-status">
+              <span class="sync-dot off" id="dataSyncDot"></span>
+              <span id="dataSyncText">Brak synchronizacji — wyniki tylko w tej przeglądarce.</span>
+            </div>
+            <div class="sync-actions">
+              <button id="dataSyncOpen" class="btn btn-gold" type="button"><span data-ico="cloud"></span> Otwórz współdzielenie</button>
+            </div>
+            <p class="note">Synchronizacja używa darmowej usługi textdb.online pod losowym kodem. Kod działa jak hasło — podawaj go tylko osobom z turnieju.</p>
+          </div>
+
+          <div class="card">
+            <div class="card-head"><h2><span data-ico="save"></span> Kopia zapasowa</h2></div>
+            <p class="note" style="margin-top:0">Zapisz wszystkie turnieje, graczy i wyniki do pliku JSON. Możesz też wczytać plik kopii na innym urządzeniu.</p>
+            <div class="sync-actions">
+              <button id="btnExport" class="btn btn-gold" type="button"><span data-ico="download"></span> Eksportuj dane (JSON)</button>
+              <button id="btnImport" class="btn btn-ghost" type="button"><span data-ico="upload"></span> Importuj dane</button>
+              <input id="importFile" type="file" accept="application/json,.json" class="hidden">
+            </div>
+            <p class="note" id="lastSaved">Ostatni zapis: —</p>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-head"><h2><span data-ico="warn"></span> Bezpieczeństwo danych</h2></div>
+          <p class="note" style="margin-top:0">Dane trzymane są lokalnie w tej przeglądarce (localStorage). Wyczyszczenie danych przeglądarki usunie wyniki — dlatego rób kopię zapasową. Import <b>nadpisuje</b> obecne dane, ale najpierw zapyta o potwierdzenie.</p>
+          <div class="sync-actions">
+            <button id="btnResetView" class="btn btn-red" type="button"><span data-ico="trash"></span> Wyczyść wszystkie dane…</button>
+          </div>
+        </div>
+      </section>
+
+    </main>
+
+    <footer class="foot">GRZYBOWIT FIFA CUP · dane: localStorage + opcjonalne współdzielenie online</footer>
   </div>
 </div>
 
-<div class="foot">GRZYBOWIT FIFA CUP · Dane: localStorage (kopia zapasowa) + opcjonalne współdzielenie online</div>
+<!-- ================= OVERLAYS ================= -->
 
-<!-- WSPÓŁDZIELONE WYNIKI (online) -->
+<!-- WSPÓŁDZIELONE WYNIKI -->
 <div id="syncOverlay" class="overlay hidden">
   <div class="modal">
-    <h2>🌐 Współdzielone wyniki</h2>
+    <div class="modal-head"><h2><span data-ico="cloud"></span> Współdzielone wyniki</h2><button class="icon-btn" data-close="syncOverlay" type="button" aria-label="Zamknij">✕</button></div>
     <p class="note" style="margin:0 0 14px">
       Wszyscy gracze widzą tę samą tabelę i te same wyniki. Każdy wpisuje kod <b>raz</b> — potem zmiany
       pojawiają się u wszystkich automatycznie (odświeżanie co ok. 10 s, a od razu po powrocie do karty).
@@ -219,23 +381,23 @@
         <input id="syncLinkOut" type="text" readonly>
       </label>
       <div class="sync-actions">
-        <button id="btnCopyLink" class="btn btn-gold btn-sm" type="button">🔗 Kopiuj link</button>
-        <button id="btnCopyCode" class="btn btn-ghost btn-sm" type="button">📋 Kopiuj kod</button>
-        <button id="btnSyncNow" class="btn btn-ghost btn-sm" type="button">🔄 Odśwież teraz</button>
-        <button id="btnSyncLeave" class="btn btn-red btn-sm" type="button">⛔ Rozłącz</button>
+        <button id="btnCopyLink" class="btn btn-gold btn-sm" type="button">Kopiuj link</button>
+        <button id="btnCopyCode" class="btn btn-ghost btn-sm" type="button">Kopiuj kod</button>
+        <button id="btnSyncNow" class="btn btn-ghost btn-sm" type="button">Odśwież teraz</button>
+        <button id="btnSyncLeave" class="btn btn-red btn-sm" type="button">Rozłącz</button>
       </div>
     </div>
 
     <div id="syncDisconnected">
       <div class="sync-actions">
-        <button id="btnSyncCreate" class="btn btn-gold" type="button">✨ Utwórz kod i udostępnij</button>
+        <button id="btnSyncCreate" class="btn btn-gold" type="button">Utwórz kod i udostępnij</button>
       </div>
       <label class="field" style="margin-top:16px">…albo dołącz kodem od znajomego
         <input id="syncJoinInput" type="text" placeholder="np. fifa-turniej-ab12cd34ef56gh78">
         <span class="note">Możesz wkleić sam kod albo cały link (np. https://…/?sync=fifa-turniej-…).</span>
       </label>
       <div class="sync-actions">
-        <button id="btnSyncJoin" class="btn btn-green" type="button">🔗 Dołącz</button>
+        <button id="btnSyncJoin" class="btn btn-green" type="button">Dołącz</button>
       </div>
     </div>
 
@@ -246,39 +408,54 @@
       kto go zna, może odczytać i zmienić wyniki, więc podawaj go tylko osobom z turnieju.
       Uwaga: usługa kasuje wpisy nieużywane przez 30 dni.
     </p>
-    <div class="modal-actions">
-      <button id="btnSyncClose" class="btn btn-ghost" type="button">Zamknij</button>
-    </div>
   </div>
 </div>
 
 <!-- LOSOWANIE -->
 <div id="drawOverlay" class="overlay hidden">
   <div class="draw-box">
-    <h2 id="drawTitle">🎰 Losowanie — rewanże</h2>
-    <p class="draw-hint" id="drawHint">Wylosowana kolejność meczów rewanżowych (miejscówki odwrócone)</p>
+    <h2 id="drawTitle"><span data-ico="dice"></span> Losowanie</h2>
+    <p class="draw-hint" id="drawHint">Wylosowana kolejność meczów</p>
     <div id="drawCards" class="draw-cards"></div>
-    <button id="btnDrawClose" class="btn btn-gold">Zamknij</button>
+    <button id="btnDrawClose" class="btn btn-gold" type="button">Zamknij</button>
   </div>
 </div>
 
 <!-- NOWY TURNIEJ -->
 <div id="newTourOverlay" class="overlay hidden">
   <div class="modal">
-    <h2>➕ Nowy turniej</h2>
+    <div class="modal-head"><h2><span data-ico="plus"></span> Nowy turniej</h2><button class="icon-btn" data-close="newTourOverlay" type="button" aria-label="Zamknij">✕</button></div>
     <label class="field">Nazwa turnieju
       <input id="ntName" type="text" placeholder="np. Turniej u Maćka">
     </label>
-    <label class="field">Gra
-      <select id="ntGame" class="select"></select>
+    <div class="grid-2">
+      <div class="field"><span class="lbl">Gra</span>
+        <button type="button" id="ntGame" class="select" style="text-align:left">FIFA 15</button>
+      </div>
+      <label class="field">Data rozpoczęcia
+        <input id="ntDate" type="date">
+      </label>
+    </div>
+    <label class="field">Format rozgrywek
+      <select id="ntFormat" class="select">
+        <option value="league+cup">Liga (2 rundy) + faza pucharowa</option>
+        <option value="league">Tylko liga (2 rundy)</option>
+        <option value="cup">Drabinka pucharowa (bezpośrednia)</option>
+      </select>
     </label>
-    <label class="field">Data
-      <input id="ntDate" type="date">
-    </label>
+    <div class="grid-2">
+      <label class="field">Punkty za zwycięstwo
+        <input id="ntWin" type="number" min="1" max="10" value="3">
+      </label>
+      <label class="field">Punkty za remis
+        <input id="ntDraw" type="number" min="0" max="10" value="1">
+      </label>
+    </div>
     <div class="field">
       <span class="lbl">Gracze</span>
       <div id="ntPlayers" class="nt-players"></div>
       <button id="ntAddPlayer" class="btn btn-ghost btn-sm" type="button">+ Dodaj gracza</button>
+      <span class="note" id="ntPlayersHint">Dla formatu „Drabinka" zalecana liczba graczy to 4, 8 lub 16.</span>
     </div>
     <p id="ntError" class="err hidden"></p>
     <div class="modal-actions">
@@ -291,16 +468,19 @@
 <!-- EDYCJA TURNIEJU -->
 <div id="editTourOverlay" class="overlay hidden">
   <div class="modal">
-    <h2>✏️ Edytuj turniej</h2>
-    <label class="field">Nazwa turnieju
-      <input id="etName" type="text" placeholder="Nazwa turnieju">
-    </label>
-    <label class="field">Gra
-      <select id="etGame" class="select"></select>
-    </label>
-    <label class="field">Data
-      <input id="etDate" type="date">
-    </label>
+    <div class="modal-head"><h2><span data-ico="edit"></span> Edytuj turniej</h2><button class="icon-btn" data-close="editTourOverlay" type="button" aria-label="Zamknij">✕</button></div>
+    <label class="field">Nazwa turnieju <input id="etName" type="text" placeholder="Nazwa turnieju"></label>
+    <div class="grid-2">
+      <div class="field"><span class="lbl">Gra</span>
+        <button type="button" id="etGame" class="select" style="text-align:left">FIFA 15</button>
+      </div>
+      <label class="field">Data <input id="etDate" type="date"></label>
+    </div>
+    <div class="grid-2">
+      <label class="field">Punkty za zwycięstwo <input id="etWin" type="number" min="1" max="10"></label>
+      <label class="field">Punkty za remis <input id="etDraw" type="number" min="0" max="10"></label>
+    </div>
+    <p id="etError" class="err hidden"></p>
     <div class="modal-actions">
       <button id="etCancel" class="btn btn-ghost" type="button">Anuluj</button>
       <button id="etSave" class="btn btn-gold" type="button">Zapisz zmiany</button>
@@ -308,13 +488,66 @@
   </div>
 </div>
 
+<!-- SZCZEGÓŁY TURNIEJU -->
+<div id="tourDetailOverlay" class="overlay hidden">
+  <div class="draw-box detail-box">
+    <div class="modal-head"><h2 id="tdTitle">Turniej</h2><button class="icon-btn" data-close="tourDetailOverlay" type="button" aria-label="Zamknij">✕</button></div>
+    <div id="tourDetailContent"></div>
+    <div class="modal-actions">
+      <button id="tdCsv" class="btn btn-ghost btn-sm" type="button"><span data-ico="download"></span> Eksport CSV</button>
+      <button id="tdPrint" class="btn btn-ghost btn-sm" type="button">Drukuj / PDF</button>
+      <button id="tdClose" class="btn btn-gold" type="button">Zamknij</button>
+    </div>
+  </div>
+</div>
+
 <!-- KARTA GRACZA -->
 <div id="profileOverlay" class="overlay hidden">
   <div class="draw-box profile-box">
+    <div class="modal-head"><h2><span data-ico="user"></span> Profil</h2><button class="icon-btn" data-close="profileOverlay" type="button" aria-label="Zamknij">✕</button></div>
     <div id="profileContent"></div>
-    <button id="btnProfileClose" class="btn btn-gold">Zamknij</button>
   </div>
 </div>
+
+<!-- EDYCJA GRACZA -->
+<div id="editPlayerOverlay" class="overlay hidden">
+  <div class="modal">
+    <div class="modal-head"><h2><span data-ico="edit"></span> Edytuj gracza</h2><button class="icon-btn" data-close="editPlayerOverlay" type="button" aria-label="Zamknij">✕</button></div>
+    <label class="field">Imię / pseudonim <input id="epName" type="text"></label>
+    <label class="field">Kolor
+      <div class="color-row" id="epColors"></div>
+    </label>
+    <p id="epError" class="err hidden"></p>
+    <div class="modal-actions">
+      <button id="epCancel" class="btn btn-ghost" type="button">Anuluj</button>
+      <button id="epSave" class="btn btn-gold" type="button">Zapisz</button>
+    </div>
+  </div>
+</div>
+
+<!-- WYBÓR GRY -->
+<div id="gamePickerOverlay" class="overlay hidden">
+  <div class="modal">
+    <div class="modal-head"><h2><span data-ico="gamepad"></span> Wybierz grę</h2><button class="icon-btn" data-close="gamePickerOverlay" type="button" aria-label="Zamknij">✕</button></div>
+    <input id="gpSearch" class="select" placeholder="Szukaj gry… (np. FIFA 15, FC 26)" style="width:100%;margin-bottom:14px">
+    <div id="gpSections" class="game-sections"></div>
+  </div>
+</div>
+
+<!-- POTWIERDZENIE -->
+<div id="confirmOverlay" class="overlay hidden">
+  <div class="modal modal-sm">
+    <h2 id="confirmTitle">Potwierdź</h2>
+    <p class="note" id="confirmText" style="margin:0 0 18px"></p>
+    <div class="modal-actions">
+      <button id="confirmCancel" class="btn btn-ghost" type="button">Anuluj</button>
+      <button id="confirmOk" class="btn btn-gold" type="button">Potwierdź</button>
+    </div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div id="toast" class="toast hidden"></div>
 
 <script src="app.js"></script>
 </body>
