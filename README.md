@@ -1,4 +1,4 @@
-# ⚽ Turniej FIFA — drabinka i tabela turnieju
+# ⚽ GRZYBOWIT FIFA CUP — drabinka i tabela turnieju
 
 Aplikacja do śledzenia turnieju FIFA w 4 osoby. Działa w przeglądarce, bez serwera.
 Wyniki zapisują się lokalnie (`localStorage`), a opcjonalnie można je **współdzielić online** między graczami.

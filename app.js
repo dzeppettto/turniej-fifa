@@ -17,9 +17,10 @@ let state = load() || defaultState();
 
 function uid() { return Math.random().toString(36).slice(2, 9); }
 
-function defaultState() {
-  const tour = {
-    id: uid(),
+/* Pierwszy turniej (FIFA 15, 13.10.2026) — wyniki odzyskane z pamięci przeglądarki. */
+function knownFirstTour(id) {
+  return {
+    id: id || uid(),
     name: "FIFA 15",
     game: DEFAULT_GAME,
     date: "2026-10-13",
@@ -27,16 +28,27 @@ function defaultState() {
     round1: [
       { h: "Maciek", a: "Mati", hs: 5, as: 4 },
       { h: "Adi", a: "Mikołaj", hs: 1, as: 3 },
-      { h: "Mati", a: "Mikołaj", hs: null, as: null },
-      { h: "Maciek", a: "Adi", hs: null, as: null },
-      { h: "Adi", a: "Mati", hs: null, as: null },
-      { h: "Mikołaj", a: "Maciek", hs: null, as: null },
+      { h: "Mati", a: "Mikołaj", hs: 3, as: 1 },
+      { h: "Maciek", a: "Adi", hs: 1, as: 4 },
+      { h: "Adi", a: "Mati", hs: 2, as: 1 },
+      { h: "Mikołaj", a: "Maciek", hs: 4, as: 5 },
     ],
-    round2: [],
-    drawn: false,
-    final: { hs: null, as: null },
-    third: { hs: null, as: null },
+    round2: [
+      { h: "Maciek", a: "Mikołaj", hs: 0, as: 2 },
+      { h: "Adi", a: "Maciek", hs: 5, as: 3 },
+      { h: "Mikołaj", a: "Mati", hs: 7, as: 1 },
+      { h: "Mati", a: "Maciek", hs: 6, as: 2 },
+      { h: "Mikołaj", a: "Adi", hs: 2, as: 1 },
+      { h: "Mati", a: "Adi", hs: 3, as: 2 },
+    ],
+    drawn: true,
+    final: { hs: 2, as: 3 },
+    third: { hs: 4, as: 3 },
   };
+}
+
+function defaultState() {
+  const tour = knownFirstTour();
   const colors = {};
   tour.players.forEach((p, i) => colors[p] = PALETTE[i % PALETTE.length]);
   return { tournaments: [tour], currentId: tour.id, colors, roster: DEFAULT_ROSTER.slice() };
@@ -127,10 +139,33 @@ function recoverLegacy() {
   return false;
 }
 
+/* Uzupełnia brakujące wyniki pierwszego turnieju, gdy w przeglądarce został tylko
+   stan startowy (same 2 mecze), np. po zmianie adresu/przeglądarki. */
+function restoreKnownFirst(s) {
+  if (!s || !Array.isArray(s.tournaments)) return false;
+  let changed = false;
+  s.tournaments.forEach(t => {
+    if (t.name !== "FIFA 15" || t.date !== "2026-10-13") return;
+    const played = [...(t.round1 || []), ...(t.round2 || [])]
+      .filter(m => m && m.hs != null && m.as != null).length;
+    if (played > 2) return; /* turniej ma już wyniki — nie ruszamy */
+    const fixed = knownFirstTour(t.id);
+    t.players = fixed.players;
+    t.round1 = fixed.round1;
+    t.round2 = fixed.round2;
+    t.drawn = true;
+    if (!t.final || (t.final.hs == null && t.final.as == null)) t.final = fixed.final;
+    if (!t.third || (t.third.hs == null && t.third.as == null)) t.third = fixed.third;
+    changed = true;
+  });
+  return changed;
+}
+
 function load() {
   const current = safeParse(STORE_KEY);
   if (current && Array.isArray(current.tournaments) && current.tournaments.length) {
     normalizeState(current);
+    restoreKnownFirst(current);
     const curPlayed = countPlayed(current);
     const lg = bestLegacy();
     if (lg.state && lg.played > curPlayed && curPlayed <= 2) return lg.state;
