@@ -18,6 +18,7 @@
     <div class="intro-actions">
       <button id="introNew" class="btn btn-gold">▶️ Zacznij nowy turniej</button>
       <button id="introStats" class="btn">📊 Statystyki i historia</button>
+      <button id="introSync" class="btn">🌐 Współdzielone wyniki</button>
       <button id="introContinue" class="btn btn-ghost">↩️ Wróć do bieżącego turnieju</button>
     </div>
   </div>
@@ -32,6 +33,9 @@
     </div>
   </div>
   <div class="top-actions">
+    <button id="syncChip" class="sync-chip" type="button" title="Współdzielone wyniki online">
+      <span class="sync-dot off"></span><span id="syncChipText">Lokalnie</span>
+    </button>
     <select id="tourSelect" class="select" title="Wybierz turniej"></select>
     <button id="btnNewTour" class="btn">➕ Nowy turniej</button>
     <button id="btnDraw" class="btn btn-gold">🎲 Losuj rewanże</button>
@@ -191,7 +195,62 @@
   </div>
 </div>
 
-<div class="foot">Turnieje FIFA · Zapis danych: localStorage</div>
+<div class="foot">Turnieje FIFA · Dane: localStorage (kopia zapasowa) + opcjonalne współdzielenie online</div>
+
+<!-- WSPÓŁDZIELONE WYNIKI (online) -->
+<div id="syncOverlay" class="overlay hidden">
+  <div class="modal">
+    <h2>🌐 Współdzielone wyniki</h2>
+    <p class="note" style="margin:0 0 14px">
+      Wszyscy gracze widzą tę samą tabelę i te same wyniki. Każdy wpisuje kod <b>raz</b> — potem zmiany
+      pojawiają się u wszystkich automatycznie (odświeżanie co ok. 10 s, a od razu po powrocie do karty).
+    </p>
+
+    <div id="syncStatusBox" class="sync-status">
+      <span class="sync-dot off" id="syncDotBox"></span>
+      <span id="syncStatusText">Brak synchronizacji — wyniki tylko w tej przeglądarce.</span>
+    </div>
+
+    <div id="syncConnected" class="hidden">
+      <label class="field">Kod współdzielenia
+        <input id="syncCodeOut" type="text" readonly>
+      </label>
+      <label class="field">Link dla znajomych
+        <input id="syncLinkOut" type="text" readonly>
+      </label>
+      <div class="sync-actions">
+        <button id="btnCopyLink" class="btn btn-gold btn-sm" type="button">🔗 Kopiuj link</button>
+        <button id="btnCopyCode" class="btn btn-ghost btn-sm" type="button">📋 Kopiuj kod</button>
+        <button id="btnSyncNow" class="btn btn-ghost btn-sm" type="button">🔄 Odśwież teraz</button>
+        <button id="btnSyncLeave" class="btn btn-red btn-sm" type="button">⛔ Rozłącz</button>
+      </div>
+    </div>
+
+    <div id="syncDisconnected">
+      <div class="sync-actions">
+        <button id="btnSyncCreate" class="btn btn-gold" type="button">✨ Utwórz kod i udostępnij</button>
+      </div>
+      <label class="field" style="margin-top:16px">…albo dołącz kodem od znajomego
+        <input id="syncJoinInput" type="text" placeholder="np. fifa-turniej-ab12cd34ef56gh78">
+        <span class="note">Możesz wkleić sam kod albo cały link (np. https://…/?sync=fifa-turniej-…).</span>
+      </label>
+      <div class="sync-actions">
+        <button id="btnSyncJoin" class="btn btn-green" type="button">🔗 Dołącz</button>
+      </div>
+    </div>
+
+    <p id="syncMsg" class="note"></p>
+    <p id="syncError" class="err hidden"></p>
+    <p class="note">
+      Dane trzymamy w darmowej usłudze <b>textdb.online</b> pod losowym kodem. Kod działa jak hasło —
+      kto go zna, może odczytać i zmienić wyniki, więc podawaj go tylko osobom z turnieju.
+      Uwaga: usługa kasuje wpisy nieużywane przez 30 dni.
+    </p>
+    <div class="modal-actions">
+      <button id="btnSyncClose" class="btn btn-ghost" type="button">Zamknij</button>
+    </div>
+  </div>
+</div>
 
 <!-- LOSOWANIE -->
 <div id="drawOverlay" class="overlay hidden">

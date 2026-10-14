@@ -139,7 +139,10 @@ function load() {
   const lg = bestLegacy();
   return lg.state || defaultState();
 }
-function save() { localStorage.setItem(STORE_KEY, JSON.stringify(state)); }
+function save() {
+  localStorage.setItem(STORE_KEY, JSON.stringify(state));
+  if (!syncApplying) cloudMarkDirty();
+}
 
 function T() { return state.tournaments.find(t => t.id === state.currentId) || state.tournaments[0]; }
 
@@ -976,7 +979,376 @@ const closeHistory = () => { hideHistory(); showIntro(); };
 document.querySelector(".brand").onclick = showIntro;
 document.getElementById("introNew").onclick = () => { hideIntro(); openNewTour(); };
 document.getElementById("introStats").onclick = openHistory;
+document.getElementById("introSync").onclick = () => { syncOpenModal(); };
 document.getElementById("introContinue").onclick = () => { hideIntro(); switchTab("kolejki"); };
 document.getElementById("btnHistoryBack").onclick = closeHistory;
+
+/* =========================================================================
+   WSPÓŁDZIELONE WYNIKI ONLINE (darmowe textdb.online, bez konta)
+   - stan turnieju leci do chmury pod losowym kodem ("sync key")
+   - każdy, kto zna kod/link, widzi i edytuje te same wyniki
+   - localStorage dalej działa jako kopia zapasowa / tryb offline
+   ========================================================================= */
+const CLOUD_BASE = "https://textdb.online";
+const SYNC_STORE = "fifa15_sync_v1";
+const SYNC_POLL_MS = 10000;
+const SYNC_PAGES_FALLBACK = "https://dzeppettto.github.io/turniej-fifa/";
+
+var syncKey = null;         // kod współdzielenia
+var syncUpdatedAt = 0;      // czas ostatniej lokalnej zmiany (ms)
+var syncPending = null;     // JSON czekający na wysłanie
+var syncLastSent = null;    // JSON ostatnio potwierdzony przez chmurę
+var syncPushTimer = null;
+var syncPollTimer = null;
+var syncBusy = false;
+var syncApplying = false;   // trwa wstawianie danych z chmury (nie oznaczaj jako brudne)
+var syncStatus = "off";
+
+const SYNC_DOT = { off: "off", connecting: "wait", saving: "wait", saved: "on", empty: "wait", error: "err" };
+const SYNC_TEXT = {
+  off: "Brak synchronizacji — wyniki tylko w tej przeglądarce.",
+  connecting: "Łączenie z chmurą…",
+  saving: "Zapisywanie w chmurze… (nowy wpis może potrwać kilka sekund)",
+  saved: "Zsynchronizowano",
+  empty: "Kod gotowy — wpisz pierwszy wynik.",
+  error: "Błąd połączenia — wyniki zapisane lokalnie, spróbuję ponownie.",
+};
+const SYNC_CHIP = { off: "Lokalnie", connecting: "Łączenie…", saving: "Zapisywanie…", saved: "Online", empty: "Online", error: "Błąd" };
+
+function syncMeta(key, updatedAt) {
+  try {
+    localStorage.setItem(SYNC_STORE, JSON.stringify({ key: key || "", updatedAt: updatedAt || 0 }));
+  } catch (e) { /* brak miejsca / tryb prywatny */ }
+}
+function syncReadMeta() {
+  try { return JSON.parse(localStorage.getItem(SYNC_STORE) || "{}") || {}; }
+  catch (e) { return {}; }
+}
+
+/* przyjmuje kod albo cały link; zwraca czysty kod lub "" */
+function syncNormalizeKey(raw) {
+  let s = String(raw || "").trim();
+  if (!s) return "";
+  const m = s.match(/[?&]sync=([^&\s#]+)/i);
+  if (m) s = decodeURIComponent(m[1]);
+  s = s.replace(/^#?sync=/i, "").trim();
+  return /^[0-9a-zA-Z_-]{6,60}$/.test(s) ? s : "";
+}
+
+function syncNewKey() {
+  const alpha = "0123456789abcdefghijklmnopqrstuvwxyz";
+  let out = "";
+  if (window.crypto && crypto.getRandomValues) {
+    const a = new Uint8Array(20);
+    crypto.getRandomValues(a);
+    for (let i = 0; i < 20; i++) out += alpha[a[i] % alpha.length];
+  } else {
+    for (let i = 0; i < 20; i++) out += alpha[Math.floor(Math.random() * alpha.length)];
+  }
+  return "fifa-turniej-" + out;
+}
+
+function syncShareLink() {
+  const base = (location.protocol === "http:" || location.protocol === "https:")
+    ? location.origin + location.pathname
+    : SYNC_PAGES_FALLBACK;
+  return base + "?sync=" + encodeURIComponent(syncKey || "");
+}
+
+/* ---------- wysyłka / odbiór ---------- */
+function cloudMarkDirty() {
+  if (!syncKey) return;
+  let json;
+  try { json = JSON.stringify(state); } catch (e) { return; }
+  if (json === syncLastSent || json === syncPending) return;
+  syncPending = json;
+  syncUpdatedAt = Date.now();
+  syncMeta(syncKey, syncUpdatedAt);
+  if (syncPushTimer) clearTimeout(syncPushTimer);
+  syncPushTimer = setTimeout(() => cloudPush(), 700);
+}
+
+function cloudWrite(valueStr) {
+  const body = new URLSearchParams();
+  body.set("key", syncKey);
+  body.set("value", valueStr);
+  return fetch(CLOUD_BASE + "/update", { method: "POST", body })
+    .then(r => (r.ok ? r.json() : Promise.reject(new Error("HTTP " + r.status))))
+    .then(j => { if (j && j.status === 0) throw new Error("zapis odrzucony"); return true; })
+    .catch(() => {
+      /* np. gdy aplikacja otwarta lokalnie (file://) — próba przez GET */
+      const url = CLOUD_BASE + "/update?key=" + encodeURIComponent(syncKey) + "&value=" + encodeURIComponent(valueStr);
+      if (url.length > 8000) throw new Error("zbyt duże dane dla trybu awaryjnego");
+      return fetch(url).then(r => { if (!r.ok) throw new Error("HTTP " + r.status); return true; });
+    });
+}
+
+function cloudPush() {
+  if (!syncKey || !syncPending) return;
+  /* zapisy szeregowo — textdb potrafi odpowiadać kilka sekund */
+  if (syncBusy) {
+    if (syncPushTimer) clearTimeout(syncPushTimer);
+    syncPushTimer = setTimeout(() => cloudPush(), 900);
+    return;
+  }
+  const json = syncPending;
+  const keyAtStart = syncKey;
+  const payload = JSON.stringify({ app: "turniej-fifa", v: 1, updatedAt: syncUpdatedAt, state: JSON.parse(json) });
+  syncBusy = true;
+  syncSetStatus("saving");
+  cloudWrite(payload)
+    .then(() => {
+      if (keyAtStart !== syncKey) return;
+      syncLastSent = json;
+      if (syncPending === json) syncPending = null;
+      syncSetStatus("saved");
+    })
+    .catch(() => syncSetStatus("error"))
+    .finally(() => { syncBusy = false; });
+}
+
+function syncFetchRemote() {
+  if (!syncKey) return Promise.resolve({ ok: false });
+  const keyAtStart = syncKey;
+  return fetch(CLOUD_BASE + "/" + encodeURIComponent(keyAtStart), { cache: "no-store" })
+    .then(r => (r.ok ? r.text() : Promise.reject(new Error("HTTP " + r.status))))
+    .then(txt => {
+      if (keyAtStart !== syncKey) return { ok: false };
+      const raw = (txt || "").trim();
+      if (!raw) return { ok: true, payload: null };
+      let p;
+      try { p = JSON.parse(raw); } catch (e) { return { ok: true, payload: null }; }
+      if (!p || !p.state || !Array.isArray(p.state.tournaments) || !p.state.tournaments.length) {
+        return { ok: true, payload: null };
+      }
+      return { ok: true, payload: p };
+    })
+    .catch(() => ({ ok: false }));
+}
+
+function cloudPull() {
+  if (!syncKey || syncBusy) return;
+  syncFetchRemote().then(res => {
+    if (!syncKey || syncBusy) return;
+    if (!res.ok) { syncSetStatus("error"); return; }
+    const remote = res.payload;
+    if (!remote) {
+      /* w chmurze pusto (nowy kod albo wpis wygasł) — wstaw nasze wyniki, jeśli jakieś mamy */
+      if (syncPending) { cloudPush(); return; }
+      if (countPlayed(state) > 0) {
+        syncPending = JSON.stringify(state);
+        syncUpdatedAt = Date.now();
+        syncMeta(syncKey, syncUpdatedAt);
+        cloudPush();
+        return;
+      }
+      syncSetStatus("empty");
+      return;
+    }
+    const remoteAt = remote.updatedAt || 0;
+    if (remoteAt > syncUpdatedAt) {
+      syncApplyRemote(remote);
+    } else if (syncUpdatedAt > remoteAt) {
+      if (!syncPending) syncPending = JSON.stringify(state);
+      cloudPush();
+    } else {
+      syncSetStatus("saved");
+    }
+  });
+}
+
+function syncApplyRemote(remote) {
+  syncApplying = true;
+  try {
+    const keepId = state && state.currentId;
+    state = normalizeState(remote.state);
+    /* nie przeskakuj między turniejami, jeśli ten sam turniej istnieje lokalnie */
+    if (keepId && state.tournaments.some(t => t.id === keepId)) state.currentId = keepId;
+    syncUpdatedAt = remote.updatedAt || Date.now();
+    syncLastSent = JSON.stringify(state);
+    syncPending = null;
+    localStorage.setItem(STORE_KEY, JSON.stringify(state));
+    syncMeta(syncKey, syncUpdatedAt);
+    renderAll();
+  } finally {
+    syncApplying = false;
+  }
+  syncSetStatus("saved");
+}
+
+/* ---------- łączenie / rozłączanie ---------- */
+function syncStartPolling() {
+  syncStopPolling();
+  /* odpytywanie tylko gdy karta jest aktywna */
+  syncPollTimer = setInterval(() => { if (!document.hidden) cloudPull(); }, SYNC_POLL_MS);
+}
+function syncStopPolling() {
+  if (syncPollTimer) clearInterval(syncPollTimer);
+  syncPollTimer = null;
+}
+
+function syncConnect(key, opts) {
+  opts = opts || {};
+  const prevKey = syncNormalizeKey(syncReadMeta().key || "");
+  syncKey = key;
+  syncPending = null;
+  syncLastSent = null;
+  if (opts.seed) {
+    syncUpdatedAt = Date.now();
+  } else if (prevKey !== key) {
+    /* nowy, obcy kod — najpierw patrzymy, co jest w chmurze */
+    syncUpdatedAt = 0;
+  }
+  syncMeta(syncKey, syncUpdatedAt);
+  syncSetStatus("connecting");
+  syncRenderUI();
+
+  if (opts.seed) {
+    syncPending = JSON.stringify(state);
+    cloudPush();
+  } else {
+    /* nie wypychaj lokalnego stanu zanim nie wiemy, co jest w chmurze */
+    try { syncLastSent = JSON.stringify(state); } catch (e) { syncLastSent = null; }
+    cloudPull();
+  }
+  syncStartPolling();
+}
+
+function syncDisconnect(silent) {
+  if (!silent && !confirm("Rozłączyć współdzielenie? Wyniki zostaną w tej przeglądarce, ale przestaną się synchronizować.")) return;
+  syncStopPolling();
+  syncKey = null;
+  syncPending = null;
+  syncLastSent = null;
+  syncMeta("", 0);
+  syncSetStatus("off");
+  syncRenderUI();
+}
+
+/* ---------- interfejs ---------- */
+function syncSetStatus(st) {
+  syncStatus = st;
+  const dotCls = SYNC_DOT[st] || "off";
+  document.querySelectorAll(".sync-dot").forEach(d => { d.className = "sync-dot " + dotCls; });
+  const chipText = document.getElementById("syncChipText");
+  if (chipText) chipText.textContent = SYNC_CHIP[st] || "Lokalnie";
+  const boxText = document.getElementById("syncStatusText");
+  if (boxText) boxText.textContent = (SYNC_TEXT[st] || "") + (st === "saved" ? " · " + syncClock() : "");
+}
+function syncClock() {
+  const d = new Date();
+  const p = n => String(n).padStart(2, "0");
+  return p(d.getHours()) + ":" + p(d.getMinutes()) + ":" + p(d.getSeconds());
+}
+
+function syncRenderUI() {
+  const connected = !!syncKey;
+  const on = document.getElementById("syncConnected");
+  const off = document.getElementById("syncDisconnected");
+  if (on) on.classList.toggle("hidden", !connected);
+  if (off) off.classList.toggle("hidden", connected);
+  if (connected) {
+    const codeEl = document.getElementById("syncCodeOut");
+    const linkEl = document.getElementById("syncLinkOut");
+    if (codeEl) codeEl.value = syncKey;
+    if (linkEl) linkEl.value = syncShareLink();
+  }
+  syncSetStatus(syncStatus);
+}
+
+function syncOpenModal() {
+  syncRenderUI();
+  document.getElementById("syncError").classList.add("hidden");
+  document.getElementById("syncMsg").textContent = "";
+  document.getElementById("syncOverlay").classList.remove("hidden");
+}
+
+function syncError(msg) {
+  const el = document.getElementById("syncError");
+  if (!el) return;
+  if (!msg) { el.classList.add("hidden"); el.textContent = ""; return; }
+  el.textContent = msg;
+  el.classList.remove("hidden");
+}
+
+function syncCopy(text, okMsg) {
+  const msg = document.getElementById("syncMsg");
+  const done = () => { if (msg) msg.textContent = okMsg || "Skopiowano!"; };
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(text).then(done).catch(() => syncCopyFallback(text, done));
+  } else {
+    syncCopyFallback(text, done);
+  }
+}
+function syncCopyFallback(text, done) {
+  const ta = document.createElement("textarea");
+  ta.value = text;
+  ta.style.position = "fixed";
+  ta.style.opacity = "0";
+  document.body.appendChild(ta);
+  ta.select();
+  try { document.execCommand("copy"); done(); } catch (e) { /* nic */ }
+  ta.remove();
+}
+
+document.getElementById("syncChip").onclick = syncOpenModal;
+document.getElementById("btnSyncClose").onclick = () => document.getElementById("syncOverlay").classList.add("hidden");
+document.getElementById("syncOverlay").onclick = (e) => {
+  if (e.target === document.getElementById("syncOverlay")) e.target.classList.add("hidden");
+};
+
+document.getElementById("btnSyncCreate").onclick = () => {
+  syncError("");
+  syncConnect(syncNewKey(), { seed: true, create: true });
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(syncShareLink()).catch(() => {});
+  }
+  const msg = document.getElementById("syncMsg");
+  if (msg) msg.textContent = "Kod utworzony — wyślij link znajomym. Skopiowałem go do schowka.";
+};
+
+document.getElementById("btnSyncJoin").onclick = () => {
+  const input = document.getElementById("syncJoinInput");
+  const key = syncNormalizeKey(input ? input.value : "");
+  if (!key) { syncError("Nieprawidłowy kod. Wklej kod (min. 6 znaków: litery, cyfry, - i _) albo cały link."); return; }
+  syncError("");
+  syncConnect(key, { seed: false });
+  const msg = document.getElementById("syncMsg");
+  if (msg) msg.textContent = "Połączono. Pobieram wyniki z chmury…";
+};
+
+document.getElementById("btnCopyLink").onclick = () => syncCopy(syncShareLink(), "Link skopiowany — wklej go na czacie i gotowe!");
+document.getElementById("btnCopyCode").onclick = () => syncCopy(syncKey || "", "Kod skopiowany.");
+document.getElementById("btnSyncLeave").onclick = () => syncDisconnect(false);
+document.getElementById("btnSyncNow").onclick = () => {
+  const msg = document.getElementById("syncMsg");
+  if (msg) msg.textContent = "Odświeżam…";
+  if (syncPending) cloudPush();
+  cloudPull();
+};
+
+/* odświeżanie po powrocie do karty */
+document.addEventListener("visibilitychange", () => { if (!document.hidden) cloudPull(); });
+window.addEventListener("focus", () => cloudPull());
+
+/* start: kod z adresu (?sync=…) ma priorytet, potem zapamiętany */
+(function syncInit() {
+  const fromUrl = syncNormalizeKey(new URLSearchParams(location.search).get("sync") || "");
+  const meta = syncReadMeta();
+  const saved = syncNormalizeKey(meta.key || "");
+  syncUpdatedAt = Number(meta.updatedAt) || 0;
+  const key = fromUrl || saved;
+
+  if (key) {
+    if (fromUrl) {
+      /* zostawiamy kod w pasku adresu? nie — czyścimy, żeby link wyglądał normalnie */
+      try { history.replaceState(null, "", location.pathname); } catch (e) { /* nic */ }
+    }
+    syncConnect(key, { seed: false });
+  } else {
+    syncSetStatus("off");
+    syncRenderUI();
+  }
+})();
 
 renderAll();

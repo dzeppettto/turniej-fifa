@@ -306,4 +306,30 @@ main{padding:14px 26px 40px}
 .chip-x{border:none;background:#ff5c7a22;color:var(--red);width:22px;height:22px;border-radius:50%;cursor:pointer;font-weight:800;line-height:1}
 .chip-x:hover{background:#ff5c7a44}
 
+/* ---- współdzielone wyniki (online) ---- */
+.hidden{display:none!important}
+.sync-chip{
+  display:inline-flex;align-items:center;gap:8px;cursor:pointer;
+  background:#121838;border:1px solid var(--line);color:var(--muted);
+  border-radius:999px;padding:8px 14px;font-size:12px;font-weight:700;transition:.15s;
+}
+.sync-chip:hover{border-color:var(--blue);color:var(--text)}
+.sync-dot{
+  width:9px;height:9px;border-radius:50%;flex:none;background:var(--muted);
+  box-shadow:0 0 0 3px #ffffff10;
+}
+.sync-dot.on{background:var(--green);box-shadow:0 0 0 3px #3ddc9733}
+.sync-dot.wait{background:var(--gold);box-shadow:0 0 0 3px #ffd16633}
+.sync-dot.err{background:var(--red);box-shadow:0 0 0 3px #ff5c7a33}
+.sync-dot.off{background:var(--muted)}
+.sync-status{
+  display:flex;align-items:center;gap:10px;background:var(--card2);
+  border:1px solid var(--line);border-radius:12px;padding:12px 14px;
+  font-size:13px;color:var(--muted);margin-bottom:16px;
+}
+.sync-actions{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+.modal .field input[readonly]{color:var(--muted);font-family:ui-monospace,Consolas,monospace;font-size:13px}
+#syncMsg{color:var(--green)}
+#syncError{margin:8px 0 0}
+
 
