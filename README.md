@@ -15,9 +15,7 @@ Aplikacja do śledzenia turnieju FIFA w 4 osoby. Działa w przeglądarce, bez se
 
 Otwórz `index.html` w przeglądarce albo wejdź na wersję online:
 
-**https://maciek.github.io/turniej-fifa/**
-
-> (adres zostanie uzupełniony po włączeniu GitHub Pages)
+**https://dzeppettto.github.io/turniej-fifa/**
 
 ## Struktura
 
