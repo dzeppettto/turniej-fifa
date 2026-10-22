@@ -2286,6 +2286,13 @@ function openSync() {
 }
 
 /* ============================ LONDYN 2012 ============================ */
+function olDate(ts){
+  if(!ts) return "—";
+  const d=new Date(ts);
+  if(isNaN(d.getTime())) return "—";
+  const p=n=>String(n).padStart(2,"0");
+  return p(d.getDate())+"."+p(d.getMonth()+1)+"."+d.getFullYear()+" "+p(d.getHours())+":"+p(d.getMinutes());
+}
 function olPlayersList(){
   const set=[];
   (state.roster||[]).forEach(p=>uniquePush(set,pname(p)));
@@ -2356,6 +2363,23 @@ function renderOlympics(){
       )).join("");
     }
   }
+  const eb=$("olEntryBody"), ec=$("olEntryCount"), ee=$("olEntryEmpty");
+  const entries=((state.olympics&&state.olympics.results)||[]).slice().sort((a,b)=>(b.createdAt||0)-(a.createdAt||0));
+  if(ec) ec.textContent=entries.length;
+  if(eb){
+    if(!entries.length){ eb.innerHTML=""; if(ee) ee.classList.remove("hidden"); }
+    else {
+      if(ee) ee.classList.add("hidden");
+      eb.innerHTML = entries.map(x=>(
+        '<tr><td class="note">'+esc(olDate(x.createdAt))+'</td>'+
+        '<td>'+(x.gold?('<span class="medal-dot gold"></span> '+esc(x.gold)):'<span class="note">—</span>')+'</td>'+
+        '<td>'+(x.silver?('<span class="medal-dot silver"></span> '+esc(x.silver)):'<span class="note">—</span>')+'</td>'+
+        '<td>'+(x.bronze?('<span class="medal-dot bronze"></span> '+esc(x.bronze)):'<span class="note">—</span>')+'</td>'+
+        '<td class="cell-actions"><button class="btn btn-ghost btn-xs" data-ol-med-edit="'+esc(x.id)+'" type="button">Zmień</button>'+
+        '<button class="btn btn-ghost btn-xs" data-ol-med-del="'+esc(x.id)+'" type="button">Usuń</button></td></tr>'
+      )).join("");
+    }
+  }
   const ev=$("olEvents");
   const fcatEl=$("olFilterCat");
   const fcat=fcatEl?fcatEl.value:"";
@@ -2376,12 +2400,19 @@ function renderOlympics(){
     ev.innerHTML=html;
   }
 }
-function openOlResult(){
+function openOlResult(editId){
   updateOlPlayersDatalist();
-  if($("olResGold")) $("olResGold").value="";
-  if($("olResSilver")) $("olResSilver").value="";
-  if($("olResBronze")) $("olResBronze").value="";
+  const editEl=$("olResEditId");
+  let rec=null;
+  if(editId) rec=((state.olympics&&state.olympics.results)||[]).filter(r=>r.id===editId)[0]||null;
+  if(editEl) editEl.value=rec?rec.id:"";
+  if($("olResGold")) $("olResGold").value=rec?(rec.gold||""):"";
+  if($("olResSilver")) $("olResSilver").value=rec?(rec.silver||""):"";
+  if($("olResBronze")) $("olResBronze").value=rec?(rec.bronze||""):"";
+  const title=$("olResTitle");
+  if(title) title.innerHTML='<span data-ico="medal"></span> '+(rec?"Edytuj medal":"Dodaj medal");
   if($("olResErr")) $("olResErr").classList.add("hidden");
+  hydrateIcons($("olResultOverlay")||document);
   openOverlay("olResultOverlay");
 }
 function saveOlResult(){
@@ -2393,12 +2424,20 @@ function saveOlResult(){
   if((g&&g===s)||(g&&g===b)||(s&&s===b)){ if(err){err.textContent="Ten sam zawodnik nie może zdobyć dwóch medali w jednym zestawie.";err.classList.remove("hidden");} return; }
   if(!state.olympics) state.olympics={results:[],records:[],updatedAt:Date.now()};
   state.olympics.results=state.olympics.results||[];
-  state.olympics.results.push({id:uid(),gold:g||null,silver:s||null,bronze:b||null,createdAt:Date.now()});
+  const editEl=$("olResEditId");
+  const editId=editEl?editEl.value:"";
+  if(editId){
+    const rec=state.olympics.results.filter(r=>r.id===editId)[0];
+    if(rec){ rec.gold=g||null; rec.silver=s||null; rec.bronze=b||null; rec.createdAt=Date.now(); }
+    else state.olympics.results.push({id:uid(),gold:g||null,silver:s||null,bronze:b||null,createdAt:Date.now()});
+  } else {
+    state.olympics.results.push({id:uid(),gold:g||null,silver:s||null,bronze:b||null,createdAt:Date.now()});
+  }
   state.olympics.updatedAt=Date.now();
   save();
   closeOverlay("olResultOverlay");
   renderOlympics();
-  toast("Medale dodane do klasyfikacji.","ok");
+  toast(editId?"Wpis medalowy zaktualizowany.":"Medale dodane do klasyfikacji.","ok");
 }
 function openOlRecord(prefEvent,editId){
   updateOlPlayersDatalist();
@@ -2564,6 +2603,19 @@ function wire() {
       if(!state.olympics) state.olympics={};
       state.olympics.records=(state.olympics.records||[]).filter(r=>r.id!==id);
       save(); renderOlympics(); toast("Rekord usunięty.","ok");
+    });
+  }
+  const oeb=$("olEntryBody");
+  if(oeb){
+    oeb.addEventListener("click",e=>{
+      const ed=e.target.closest("[data-ol-med-edit]");
+      if(ed){ openOlResult(ed.getAttribute("data-ol-med-edit")); return; }
+      const d=e.target.closest("[data-ol-med-del]");
+      if(!d)return;
+      const id=d.getAttribute("data-ol-med-del");
+      if(!state.olympics) state.olympics={};
+      state.olympics.results=(state.olympics.results||[]).filter(r=>r.id!==id);
+      save(); renderOlympics(); toast("Wpis medalowy usunięty.","ok");
     });
   }
 

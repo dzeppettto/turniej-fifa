@@ -10,7 +10,7 @@ Wyniki zapisują się lokalnie (`localStorage`), a opcjonalnie można je **wspó
 - 🥇 **Drabinka** — drabinka turniejowa z finałem 2 najlepszych miejsc
 - 🎰 **Losowanie** — wizualizacja wylosowanej kolejności meczów rewanżowych
 - 👤 **Statystyki i historia** — ranking graczy, bilans per gra, H2H, historia wszystkich turniejów (osobny ekran dostępny ze strony startowej)
-- 🏅 **Londyn 2012** — turniej w grze *London 2012 – The Official Video Game*: **medale** (jeden wpis = złoto / srebro / brąz, bez przypisywania do konkurencji) i tabela medalowa sortowana złoto → srebro → brąz, oraz **osobna lista rekordów świata** (konkurencja + wartość + autor, ręcznie dodawane, edytowalne i usuwalne; 30 konkurencji w 6 dyscyplinach)
+- 🏅 **Londyn 2012** — turniej w grze *London 2012 – The Official Video Game*: **medale** (jeden wpis = złoto / srebro / brąz, bez przypisywania do konkurencji) i tabela medalowa sortowana złoto → srebro → brąz, lista wpisów medalowych z możliwością **edycji i usuwania**, oraz **osobna lista rekordów świata** (konkurencja + wartość + autor, ręcznie dodawane, edytowalne i usuwalne; 30 konkurencji w 6 dyscyplinach)
 - 💾 **Zapis danych** — lokalnie w `localStorage` + opcjonalnie w chmurze
 - 🌐 **Współdzielone wyniki online** — wszyscy gracze widzą tę samą tabelę na żywo
 

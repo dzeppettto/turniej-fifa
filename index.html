@@ -9,7 +9,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="styles.css?v=3">
+<link rel="stylesheet" href="styles.css?v=4">
 </head>
 <body>
 <div class="bg"></div>
@@ -345,13 +345,35 @@
                   <th class="center"><span class="medal-dot silver"></span> Srebro</th>
                   <th class="center"><span class="medal-dot bronze"></span> Brąz</th>
                   <th class="center">Razem</th>
-                  <th></th>
                 </tr>
               </thead>
               <tbody id="olMedalBody"></tbody>
             </table>
           </div>
           <p class="note">Każdy wpis to jeden zestaw medali (złoto / srebro / brąz). Sortowanie: złoto → srebro → brąz.</p>
+        </div>
+
+        <div class="card">
+          <div class="card-head">
+            <h2><span data-ico="edit"></span> Wpisy medalowe</h2>
+            <span class="badge" id="olEntryCount">0</span>
+          </div>
+          <p class="note" style="margin-top:0">Tu możesz poprawić lub usunąć pojedynczy wpis (np. gdy ktoś dostał medal pomyłką).</p>
+          <div class="table-wrap">
+            <table class="standings compact" id="olEntryTable">
+              <thead>
+                <tr>
+                  <th>Data</th>
+                  <th><span class="medal-dot gold"></span> Złoto</th>
+                  <th><span class="medal-dot silver"></span> Srebro</th>
+                  <th><span class="medal-dot bronze"></span> Brąz</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody id="olEntryBody"></tbody>
+            </table>
+          </div>
+          <div class="empty-inline hidden" id="olEntryEmpty">Brak wpisów. Dodaj pierwszy przyciskiem „Dodaj medal".</div>
         </div>
 
         <div class="card">
@@ -633,15 +655,16 @@
 <!-- TOAST -->
 <div id="toast" class="toast hidden"></div>
 
-<script src="app.js?v=3"></script>
+<script src="app.js?v=4"></script>
   <!-- DODAJ MEDAL LONDYN 2012 -->
   <div id="olResultOverlay" class="overlay hidden">
     <div class="modal modal-sm">
       <div class="modal-head">
-        <h2><span data-ico="medal"></span> Dodaj medal</h2>
+        <h2 id="olResTitle"><span data-ico="medal"></span> Dodaj medal</h2>
         <button class="icon-btn" data-close="olResultOverlay" type="button" aria-label="Zamknij">✕</button>
       </div>
       <div class="modal-body">
+        <input type="hidden" id="olResEditId" value="">
         <p class="note" style="margin-top:0">Wpisz kto zdobył złoto, srebro i brąz. Wystarczy wypełnić jedno pole.</p>
         <div class="field">
           <label><span class="medal-dot gold"></span> Złoto</label>
@@ -659,7 +682,7 @@
       </div>
       <div class="modal-actions">
         <button class="btn btn-ghost" data-close="olResultOverlay" type="button">Anuluj</button>
-        <button class="btn btn-gold" id="olResSave" type="button">Dodaj medal</button>
+        <button class="btn btn-gold" id="olResSave" type="button">Zapisz medal</button>
       </div>
     </div>
   </div>
