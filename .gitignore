@@ -5,3 +5,7 @@ aplikacja-fifa---drabinka-i-tabela-turnieju.json
 Thumbs.db
 .DS_Store
 desktop.ini
+
+# Kopie zapasowe plików roboczych (nie publikujemy)
+*.bak
+*.old

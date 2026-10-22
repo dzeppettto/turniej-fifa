@@ -11,6 +11,14 @@ const LAST_SAVE_KEY = "fifa15_last_save_v1";
 const LEGACY_KEYS = ["fifa15_turnieje_v2", "fifaTurniej4"];
 const DEFAULT_GAME = "FIFA 15";
 const DEFAULT_ROSTER = ["Adi", "Maciek", "Mati", "Mikołaj"];
+const OLYMPICS_EVENTS = [
+  {cat:"Lekkoatletyka", list:["Bieg na 100 m","Bieg na 200 m","Bieg na 400 m","Bieg na 110 m przez płotki","Skok wzwyż","Skok w dal","Trójskok","Pchnięcie kulą","Rzut dyskiem","Rzut oszczepem","Rzut młotem"]},
+  {cat:"Pływanie i Skoki do wody", list:["50 m stylem dowolnym","100 m stylem grzbietowym","100 m stylem klasycznym","100 m stylem motylkowym","Skoki z wieży 10 m (indywidualne)","Skoki synchroniczne z wieży 10 m"]},
+  {cat:"Gimnastyka", list:["Gimnastyka sportowa – ćwiczenia wolne (mężczyźni / kobiety)","Skok przez konia (mężczyźni / kobiety)","Trampolina"]},
+  {cat:"Kolarstwo", list:["Kolarstwo torowe – Sprint drużynowy","Keirin"]},
+  {cat:"Strzelectwo i Łucznictwo", list:["Łucznictwo – indywidualne","Pistolet szybkostrzelny 25 m","Skeet (strzelanie do rzutków)"]},
+  {cat:"Sporty drużynowe i inne", list:["Siatkówka plażowa","Tenis stołowy (singiel)","Kajakarstwo górskie (K1)","Wioślarstwo – jedynka (Single Sculls)","Podnoszenie ciężarów (+105 kg)"]}
+];
 const PALETTE = [
   "#ffd166", "#ff5c7a", "#5aa9ff", "#3ddc97", "#b28dff", "#ff9f43",
   "#4ecdc4", "#f78fb3", "#a0e7e5", "#f6e58d", "#c56cf0", "#ff7979"
@@ -170,7 +178,7 @@ function defaultState() {
   const tour = knownFirstTour();
   const colors = {};
   tour.players.forEach((p, i) => { colors[p] = PALETTE[i % PALETTE.length]; });
-  return { tournaments: [tour], currentId: tour.id, colors: colors, roster: DEFAULT_ROSTER.slice(), games: [] };
+  return { tournaments: [tour], currentId: tour.id, colors: colors, roster: DEFAULT_ROSTER.slice(), games: [], olympics: {results:[], records:[], updatedAt: Date.now()} };
 }
 function safeParse(key) {
   try { const r = localStorage.getItem(key); return r ? JSON.parse(r) : null; }
@@ -329,14 +337,24 @@ function load() {
   const current = safeParse(STORE_KEY);
   if (current && Array.isArray(current.tournaments)) {
     normalizeState(current);
+    if(!current.olympics) current.olympics = {results:[], records:[], updatedAt: Date.now()};
+    if(!Array.isArray(current.olympics.results)) current.olympics.results=[];
+    if(!Array.isArray(current.olympics.records)) current.olympics.records=[];
     restoreKnownFirst(current);
     const curPlayed = countPlayed(current);
     const lg = bestLegacy();
-    if (lg.state && lg.played > curPlayed) return lg.state;
+    if (lg.state && lg.played > curPlayed) {
+      if(!lg.state.olympics) lg.state.olympics = {results:[], records:[], updatedAt: Date.now()};
+      return lg.state;
+    }
     return current;
   }
   const lg = bestLegacy();
-  return lg.state || defaultState();
+  const st = lg.state || defaultState();
+  if(!st.olympics) st.olympics = {results:[], records:[], updatedAt: Date.now()};
+  if(!Array.isArray(st.olympics.results)) st.olympics.results=[];
+  if(!Array.isArray(st.olympics.records)) st.olympics.records=[];
+  return st;
 }
 
 let state = load();
@@ -856,6 +874,7 @@ function switchView(name) {
   if (name === "standings") renderStandings();
   if (name === "bracket") renderBracket();
   if (name === "home") renderHome();
+  if (name === "olympics") renderOlympics();
   try { window.scrollTo({ top: 0, behavior: "auto" }); } catch (e) { window.scrollTo(0, 0); }
 }
 function renderAll() {
@@ -867,6 +886,7 @@ function renderAll() {
   renderBracket();
   renderPlayers();
   renderTournaments();
+  renderOlympics();
   updateLastSaved();
   hydrateIcons(document);
 }
@@ -2265,6 +2285,167 @@ function openSync() {
   openOverlay("syncOverlay");
 }
 
+/* ============================ LONDYN 2012 ============================ */
+function olPlayersList(){
+  const set=[];
+  (state.roster||[]).forEach(p=>uniquePush(set,pname(p)));
+  state.tournaments.forEach(t=>(t.players||[]).forEach(p=>uniquePush(set,pname(p))));
+  (state.olympics&&state.olympics.results?state.olympics.results:[]).forEach(r=>{
+    ['gold','silver','bronze'].forEach(m=>{ if(r[m]) uniquePush(set,pname(r[m])); });
+  });
+  return set.sort((a,b)=>a.localeCompare(b,'pl'));
+}
+function updateOlPlayersDatalist(){
+  const dl=$("olPlayersList");
+  if(!dl)return;
+  dl.innerHTML = olPlayersList().map(p=>'<option value="'+esc(p)+'"></option>').join('');
+}
+function computeOlympicMedals(){
+  const o=state.olympics||{results:[]};
+  const map={};
+  (o.results||[]).forEach(r=>{
+    ['gold','silver','bronze'].forEach(m=>{
+      const n=pname(r[m]); if(!n)return;
+      if(!map[n]) map[n]={name:n,g:0,s:0,b:0};
+      if(m==='gold') map[n].g++;
+      else if(m==='silver') map[n].s++;
+      else map[n].b++;
+    });
+  });
+  const rows=Object.keys(map).map(k=>{ const x=map[k]; x.total=x.g+x.s+x.b; return x; });
+  rows.sort((a,b)=>(b.g-a.g)||(b.s-a.s)||(b.b-a.b)||a.name.localeCompare(b.name,'pl'));
+  return rows;
+}
+function renderOlympics(){
+  updateOlPlayersDatalist();
+  const rows=computeOlympicMedals();
+  const mb=$("olMedalBody"), mc=$("olMedalCount");
+  if(mc) mc.textContent = rows.length + " " + plural(rows.length,"zawodnik","zawodników","zawodników");
+  if(mb){
+    if(!rows.length){
+      mb.innerHTML='<tr><td colspan="6" class="note">Brak wyników. Dodaj pierwszy wynik konkurencji.</td></tr>';
+    } else {
+      mb.innerHTML = rows.map((p,i)=>(
+        '<tr class="player-link" data-player="'+esc(p.name)+'">'+
+          "<td>"+(i+1)+"</td>"+
+          '<td class="name">'+avatar(p.name)+" "+esc(p.name)+"</td>"+
+          '<td class="center">'+p.g+"</td>"+
+          '<td class="center">'+p.s+"</td>"+
+          '<td class="center">'+p.b+"</td>"+
+          '<td class="center"><b>'+p.total+"</b></td>"+
+        "</tr>"
+      )).join("");
+    }
+  }
+  const rb=$("olRecordBody"), rc=$("olRecordCount"), re=$("olRecordEmpty");
+  const recs=((state.olympics&&state.olympics.records)||[]).slice().sort((a,b)=>(b.createdAt||0)-(a.createdAt||0));
+  if(rc) rc.textContent=recs.length;
+  if(rb){
+    if(!recs.length){ rb.innerHTML=""; if(re) re.classList.remove("hidden"); }
+    else {
+      if(re) re.classList.add("hidden");
+      rb.innerHTML = recs.map(x=>(
+        '<tr><td>'+esc(x.event)+'</td><td><b>'+esc(x.value)+'</b></td><td>'+esc(x.who||"—")+'</td><td class="note">'+esc(x.note||"")+'</td>'+
+        '<td><button class="btn btn-ghost btn-xs" data-ol-rec-del="'+esc(x.id)+'" type="button">Usuń</button></td></tr>'
+      )).join("");
+    }
+  }
+  const ev=$("olEvents");
+  const fcatEl=$("olFilterCat");
+  const fcat=fcatEl?fcatEl.value:"";
+  if(ev){
+    let html="";
+    OLYMPICS_EVENTS.forEach(g=>{
+      if(fcat && g.cat!==fcat) return;
+      const list=g.list.map(name=>{
+        const mls=((state.olympics&&state.olympics.results)||[]).filter(r=>r.event===name);
+        const got=mls.length?('<span class="pill soft">'+mls.length+' '+plural(mls.length,"wynik","wyniki","wyników")+"</span>"):'<span class="note">brak</span>';
+        const g1=mls.filter(x=>x.gold)[0], s1=mls.filter(x=>x.silver)[0], b1=mls.filter(x=>x.bronze)[0];
+        const mini='<div class="ol-medals">'+
+          (g1?'<span class="ol-medal"><span class="medal-dot gold"></span><b>'+esc(g1.gold)+"</b></span>":"")+
+          (s1?'<span class="ol-medal"><span class="medal-dot silver"></span><b>'+esc(s1.silver)+"</b></span>":"")+
+          (b1?'<span class="ol-medal"><span class="medal-dot bronze"></span><b>'+esc(b1.bronze)+"</b></span>":"")+
+          "</div>";
+        return '<button class="ol-item" data-ol-quick="'+esc(name)+'" data-ol-cat="'+esc(g.cat)+'" type="button"><span class="meta"><b>'+esc(name)+"</b><small>"+got+"</small></span>"+mini+"</button>";
+      }).join("");
+      html += '<div class="ol-group"><h3>'+esc(g.cat)+'</h3><div class="ol-list">'+list+"</div></div>";
+    });
+    if(!html) html='<div class="empty-inline">Brak konkurencji dla wybranego filtru.</div>';
+    ev.innerHTML=html;
+  }
+}
+function olFillEvents(prefEvent){
+  const c=$("olResCat"), e=$("olResEvent");
+  if(!c||!e) return;
+  const g=OLYMPICS_EVENTS.filter(x=>x.cat===c.value)[0];
+  e.innerHTML=(g?g.list:[]).map(n=>'<option value="'+esc(n)+'">'+esc(n)+"</option>").join("");
+  if(prefEvent) e.value=prefEvent;
+}
+function openOlResult(prefEvent,prefCat){
+  updateOlPlayersDatalist();
+  const c=$("olResCat");
+  if(c){
+    c.innerHTML=OLYMPICS_EVENTS.map(g=>'<option value="'+esc(g.cat)+'">'+esc(g.cat)+"</option>").join("");
+    c.value=prefCat||OLYMPICS_EVENTS[0].cat;
+    c.onchange=function(){ olFillEvents(); };
+  }
+  olFillEvents(prefEvent);
+  if($("olResGold")) $("olResGold").value="";
+  if($("olResSilver")) $("olResSilver").value="";
+  if($("olResBronze")) $("olResBronze").value="";
+  if($("olResErr")) $("olResErr").classList.add("hidden");
+  openOverlay("olResultOverlay");
+}
+function saveOlResult(){
+  const ev=$("olResEvent")?$("olResEvent").value:"";
+  const cat=$("olResCat")?$("olResCat").value:"";
+  const g=pname($("olResGold")?$("olResGold").value:"");
+  const s=pname($("olResSilver")?$("olResSilver").value:"");
+  const b=pname($("olResBronze")?$("olResBronze").value:"");
+  const err=$("olResErr");
+  if(!ev){ if(err){err.textContent="Wybierz konkurencję.";err.classList.remove("hidden");} return; }
+  if(!g&&!s&&!b){ if(err){err.textContent="Wpisz przynajmniej jednego medalistę.";err.classList.remove("hidden");} return; }
+  if((g&&g===s)||(g&&g===b)||(s&&s===b)){ if(err){err.textContent="Ten sam zawodnik nie może zdobyć dwóch medali w tej samej konkurencji.";err.classList.remove("hidden");} return; }
+  if(!state.olympics) state.olympics={results:[],records:[],updatedAt:Date.now()};
+  state.olympics.results=(state.olympics.results||[]).filter(r=>r.event!==ev);
+  state.olympics.results.push({id:uid(),cat:cat,event:ev,gold:g||null,silver:s||null,bronze:b||null,createdAt:Date.now()});
+  state.olympics.updatedAt=Date.now();
+  save();
+  closeOverlay("olResultOverlay");
+  renderOlympics();
+  toast("Wynik zapisany w tabeli medalowej.","ok");
+}
+function openOlRecord(prefEvent){
+  updateOlPlayersDatalist();
+  const e=$("olRecEvent");
+  if(e){
+    e.innerHTML=OLYMPICS_EVENTS.map(g=>'<optgroup label="'+esc(g.cat)+'">'+g.list.map(n=>'<option value="'+esc(n)+'">'+esc(n)+"</option>").join("")+"</optgroup>").join("");
+    if(prefEvent) e.value=prefEvent;
+  }
+  if($("olRecValue")) $("olRecValue").value="";
+  if($("olRecWho")) $("olRecWho").value="";
+  if($("olRecNote")) $("olRecNote").value="";
+  if($("olRecErr")) $("olRecErr").classList.add("hidden");
+  openOverlay("olRecordOverlay");
+}
+function saveOlRecord(){
+  const ev=$("olRecEvent")?$("olRecEvent").value:"";
+  const val=pname($("olRecValue")?$("olRecValue").value:"");
+  const who=pname($("olRecWho")?$("olRecWho").value:"");
+  const note=$("olRecNote")?$("olRecNote").value.trim():"";
+  const err=$("olRecErr");
+  if(!ev){ if(err){err.textContent="Wybierz konkurencję.";err.classList.remove("hidden");} return; }
+  if(!val){ if(err){err.textContent="Wpisz wartość rekordu.";err.classList.remove("hidden");} return; }
+  if(!who){ if(err){err.textContent="Wpisz kto ustanowił rekord.";err.classList.remove("hidden");} return; }
+  if(!state.olympics) state.olympics={results:[],records:[],updatedAt:Date.now()};
+  state.olympics.records.push({id:uid(),event:ev,value:val,who:who,note:note,createdAt:Date.now()});
+  state.olympics.updatedAt=Date.now();
+  save();
+  closeOverlay("olRecordOverlay");
+  renderOlympics();
+  toast("Rekord świata dodany.","ok");
+}
+
 /* ============================ START APLIKACJI ============================ */
 function on(id, ev, fn) { const el = $(id); if (el) el.addEventListener(ev, fn); }
 
@@ -2347,6 +2528,41 @@ function wire() {
   on("btnImport", "click", () => { const f = $("importFile"); if (f) f.click(); });
   on("importFile", "change", e => { const f = e.target.files[0]; if (f) importJsonFile(f); e.target.value = ""; });
   on("btnResetView", "click", resetAll);
+
+  on("olAddResult","click",()=>openOlResult());
+  on("olAddRecord","click",()=>openOlRecord());
+  on("olResSave","click",saveOlResult);
+  on("olRecSave","click",saveOlRecord);
+  on("olFilterCat","change",renderOlympics);
+  on("olFilterReset","click",()=>{ const f=$("olFilterCat"); if(f) f.value=""; renderOlympics(); });
+  on("olReset","click",async ()=>{
+    const ok=await askConfirm("Usunąć wszystkie wyniki i rekordy Londyn 2012?","Wyczyść","Wyczyść wyniki?");
+    if(!ok)return;
+    if(!state.olympics) state.olympics={};
+    state.olympics.results=[];
+    state.olympics.records=[];
+    state.olympics.updatedAt=Date.now();
+    save(); renderOlympics(); toast("Wyczyszczone.","ok");
+  });
+
+  const oev=$("olEvents");
+  if(oev){
+    oev.addEventListener("click",e=>{
+      const b=e.target.closest("[data-ol-quick]");
+      if(b) openOlResult(b.getAttribute("data-ol-quick"), b.getAttribute("data-ol-cat"));
+    });
+  }
+  const orb=$("olRecordBody");
+  if(orb){
+    orb.addEventListener("click",e=>{
+      const d=e.target.closest("[data-ol-rec-del]");
+      if(!d)return;
+      const id=d.getAttribute("data-ol-rec-del");
+      if(!state.olympics) state.olympics={};
+      state.olympics.records=(state.olympics.records||[]).filter(r=>r.id!==id);
+      save(); renderOlympics(); toast("Rekord usunięty.","ok");
+    });
+  }
 
   /* modale */
   on("confirmOk", "click", () => closeConfirm(true));

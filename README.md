@@ -1,6 +1,6 @@
 # ⚽ GRZYBOWIT FIFA CUP — drabinka i tabela turnieju
 
-Aplikacja do śledzenia turnieju FIFA w 4 osoby. Działa w przeglądarce, bez serwera.
+Aplikacja do śledzenia turnieju FIFA w 4 osoby oraz turnieju **Londyn 2012**. Działa w przeglądarce, bez serwera.
 Wyniki zapisują się lokalnie (`localStorage`), a opcjonalnie można je **współdzielić online** między graczami.
 
 ## Funkcje
@@ -10,6 +10,7 @@ Wyniki zapisują się lokalnie (`localStorage`), a opcjonalnie można je **wspó
 - 🥇 **Drabinka** — drabinka turniejowa z finałem 2 najlepszych miejsc
 - 🎰 **Losowanie** — wizualizacja wylosowanej kolejności meczów rewanżowych
 - 👤 **Statystyki i historia** — ranking graczy, bilans per gra, H2H, historia wszystkich turniejów (osobny ekran dostępny ze strony startowej)
+- 🏅 **Londyn 2012** — turniej w grze *London 2012 – The Official Video Game*: tabela medali (złoto/srebro/brąz), wyniki 30 konkurencji w 6 dyscyplinach oraz ręcznie dodawane rekordy świata wraz z autorami
 - 💾 **Zapis danych** — lokalnie w `localStorage` + opcjonalnie w chmurze
 - 🌐 **Współdzielone wyniki online** — wszyscy gracze widzą tę samą tabelę na żywo
 

@@ -33,6 +33,7 @@
       <button class="nav-item" data-view="bracket" type="button"><span class="ico" data-ico="bracket"></span><span class="lbl">Drabinka</span></button>
       <button class="nav-item" data-view="players" type="button"><span class="ico" data-ico="users"></span><span class="lbl">Gracze</span></button>
       <button class="nav-item" data-view="tournaments" type="button"><span class="ico" data-ico="history"></span><span class="lbl">Turnieje</span></button>
+      <button class="nav-item" data-view="olympics" type="button"><span class="ico" data-ico="medal"></span><span class="lbl">Londyn 2012</span></button>
       <button class="nav-item" data-view="data" type="button"><span class="ico" data-ico="settings"></span><span class="lbl">Dane</span></button>
     </nav>
 
@@ -315,6 +316,86 @@
         </div>
       </section>
 
+      <!-- LONDYN 2012 -->
+      <section class="view" id="view-olympics">
+        <header class="view-head">
+          <div>
+            <h1><span data-ico="medal"></span> London 2012 - The Official Video Game</h1>
+            <p class="sub">Klasyfikacja medalowa, wyniki konkurencji, rekordy świata</p>
+          </div>
+          <div class="head-actions">
+            <button class="btn btn-gold" id="olAddResult" type="button"><span data-ico="plus"></span> Dodaj wynik</button>
+            <button class="btn btn-ghost" id="olAddRecord" type="button"><span data-ico="star"></span> Dodaj rekord świata</button>
+            <button class="btn btn-ghost btn-sm" id="olReset" type="button"><span data-ico="trash"></span> Wyczyść wyniki</button>
+          </div>
+        </header>
+        <div class="grid-2">
+          <div class="card">
+            <div class="card-head">
+              <h2><span data-ico="medal"></span> Klasyfikacja medalowa</h2>
+              <span class="badge badge-gold" id="olMedalCount">0 zawodników</span>
+            </div>
+            <div class="table-wrap">
+              <table class="standings compact" id="olMedalTable">
+                <thead>
+                  <tr>
+                    <th>#</th>
+                    <th>Zawodnik</th>
+                    <th class="center"><span class="medal-dot gold"></span> Złoto</th>
+                    <th class="center"><span class="medal-dot silver"></span> Srebro</th>
+                    <th class="center"><span class="medal-dot bronze"></span> Brąz</th>
+                    <th class="center">Razem</th>
+                  </tr>
+                </thead>
+                <tbody id="olMedalBody"></tbody>
+              </table>
+            </div>
+            <p class="note">Sortowanie: złoto → srebro → brąz.</p>
+          </div>
+          <div class="card">
+            <div class="card-head">
+              <h2><span data-ico="star"></span> Rekordy świata</h2>
+              <span class="badge" id="olRecordCount">0</span>
+            </div>
+            <div class="table-wrap">
+              <table class="standings compact">
+                <thead>
+                  <tr>
+                    <th>Konkurencja</th>
+                    <th>Rekord</th>
+                    <th>Kto ustanowił</th>
+                    <th>Notatka</th>
+                    <th></th>
+                  </tr>
+                </thead>
+                <tbody id="olRecordBody"></tbody>
+              </table>
+            </div>
+            <div class="empty-inline hidden" id="olRecordEmpty">Brak rekordów. Dodaj pierwszy ręcznie.</div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-head">
+            <h2><span data-ico="calendar"></span> Konkurencje</h2>
+            <div class="filter-row tight">
+              <label>Dyscyplina:
+                <select id="olFilterCat" class="select">
+                  <option value="">Wszystkie</option>
+                  <option value="Lekkoatletyka">Lekkoatletyka</option>
+                  <option value="Pływanie i Skoki do wody">Pływanie i Skoki do wody</option>
+                  <option value="Gimnastyka">Gimnastyka</option>
+                  <option value="Kolarstwo">Kolarstwo</option>
+                  <option value="Strzelectwo i Łucznictwo">Strzelectwo i Łucznictwo</option>
+                  <option value="Sporty drużynowe i inne">Sporty drużynowe i inne</option>
+                </select>
+              </label>
+              <button class="btn btn-ghost btn-sm" id="olFilterReset" type="button">Wyczyść</button>
+            </div>
+          </div>
+          <div id="olEvents"></div>
+        </div>
+      </section>
+
       <!-- ===== DANE ===== -->
       <section id="view-data" class="view">
         <div class="home-grid">
@@ -550,5 +631,78 @@
 <div id="toast" class="toast hidden"></div>
 
 <script src="app.js"></script>
+  <!-- DODAJ WYNIK LONDYN 2012 -->
+  <div id="olResultOverlay" class="overlay hidden">
+    <div class="modal">
+      <div class="modal-head">
+        <h2><span data-ico="medal"></span> Dodaj wynik konkurencji</h2>
+        <button class="icon-btn" data-close="olResultOverlay" type="button" aria-label="Zamknij">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="field">
+          <label>Dyscyplina</label>
+          <select id="olResCat" class="input"></select>
+        </div>
+        <div class="field">
+          <label>Konkurencja</label>
+          <select id="olResEvent" class="input"></select>
+        </div>
+        <div class="grid-3">
+          <div class="field">
+            <label><span class="medal-dot gold"></span> Złoto</label>
+            <input id="olResGold" class="input" list="olPlayersList" placeholder="Zawodnik">
+          </div>
+          <div class="field">
+            <label><span class="medal-dot silver"></span> Srebro</label>
+            <input id="olResSilver" class="input" list="olPlayersList" placeholder="Zawodnik">
+          </div>
+          <div class="field">
+            <label><span class="medal-dot bronze"></span> Brąz</label>
+            <input id="olResBronze" class="input" list="olPlayersList" placeholder="Zawodnik">
+          </div>
+        </div>
+        <div class="err hidden" id="olResErr"></div>
+      </div>
+      <div class="modal-actions">
+        <button class="btn btn-ghost" data-close="olResultOverlay" type="button">Anuluj</button>
+        <button class="btn btn-gold" id="olResSave" type="button">Zapisz wynik</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- DODAJ REKORD ŚWIATA -->
+  <div id="olRecordOverlay" class="overlay hidden">
+    <div class="modal modal-sm">
+      <div class="modal-head">
+        <h2><span data-ico="star"></span> Dodaj rekord świata</h2>
+        <button class="icon-btn" data-close="olRecordOverlay" type="button" aria-label="Zamknij">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="field">
+          <label>Konkurencja</label>
+          <select id="olRecEvent" class="input"></select>
+        </div>
+        <div class="field">
+          <label>Rekord (czas / odległość / wynik)</label>
+          <input id="olRecValue" class="input" placeholder="np. 9.63 s, 8.31 m">
+        </div>
+        <div class="field">
+          <label>Kto ustanowił</label>
+          <input id="olRecWho" class="input" list="olPlayersList" placeholder="Zawodnik">
+        </div>
+        <div class="field">
+          <label>Notatka (opcjonalne)</label>
+          <input id="olRecNote" class="input" placeholder="np. London 2012">
+        </div>
+        <div class="err hidden" id="olRecErr"></div>
+      </div>
+      <div class="modal-actions">
+        <button class="btn btn-ghost" data-close="olRecordOverlay" type="button">Anuluj</button>
+        <button class="btn btn-gold" id="olRecSave" type="button">Zapisz rekord</button>
+      </div>
+    </div>
+  </div>
+
+  <datalist id="olPlayersList"></datalist>
 </body>
 </html>
