@@ -611,4 +611,5 @@ input.select[type=date]{min-width:150px}
 .ol-medals{display:flex;gap:6px}
 .ol-medal{display:flex;align-items:center;gap:6px;padding:4px 8px;border-radius:999px;border:1px solid var(--border);background:var(--panel-2)}
 .center{text-align:center}
+.cell-actions{display:flex;gap:6px;justify-content:flex-end;white-space:nowrap}
 
